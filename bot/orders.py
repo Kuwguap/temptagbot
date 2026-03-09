@@ -70,8 +70,8 @@ def create_order(
 
 def notify_admin_order(order_number: str, product_code: str, vin: str, address: str, color: str, phone: str, insurance_info: str | None) -> None:
     settings = get_settings()
-    admin_id = get_admin_group_id()
-    if not admin_id or not settings.telegram_bot_token:
+    ids = get_admin_group_ids()
+    if not ids or not settings.telegram_bot_token:
         return
     text = (
         f"📋 *Order {order_number}* (Telegram)\n"
@@ -83,18 +83,30 @@ def notify_admin_order(order_number: str, product_code: str, vin: str, address: 
         f"Insurance: {insurance_info or 'N/A'}"
     )
     url = f"https://api.telegram.org/bot{settings.telegram_bot_token}/sendMessage"
-    try:
-        r = requests.post(
-            url,
-            json={"chat_id": admin_id, "text": text, "parse_mode": "Markdown"},
-            timeout=10,
-        )
-        r.raise_for_status()
-    except Exception as e:
-        logger.warning("Notify admin failed: %s", e)
+    for admin_id in ids:
+        try:
+            r = requests.post(
+                url,
+                json={"chat_id": admin_id, "text": text, "parse_mode": "Markdown"},
+                timeout=10,
+            )
+            r.raise_for_status()
+        except Exception as e:
+            logger.warning("Notify admin failed for %s: %s", admin_id, e)
 
 
-def get_admin_group_id() -> int | None:
+def get_admin_group_ids() -> list[int]:
     from .settings_client import fetch_telegram_settings
+
     t = fetch_telegram_settings()
-    return t.admin_group_id
+    ids: list[int] = []
+    if t.admin_group_id:
+        ids.append(t.admin_group_id)
+    desc = getattr(t, "description", None) or ""
+    for part in desc.split(","):
+        s = part.strip()
+        if s and s.lstrip("-").isdigit():
+            val = int(s)
+            if val not in ids:
+                ids.append(val)
+    return ids

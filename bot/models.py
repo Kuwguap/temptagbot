@@ -17,6 +17,7 @@ class ProductConfig:
 @dataclass
 class TelegramSettings:
     admin_group_id: Optional[int]
+    description: Optional[str] = None
 
 
 @dataclass

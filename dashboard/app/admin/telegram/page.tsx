@@ -6,6 +6,7 @@ import { supabase } from "../../../lib/supabaseClient";
 type TelegramSettings = {
   id: number;
   admin_group_id: number | null;
+  description?: string | null;
 };
 
 const AdminTelegramPage: React.FC = () => {
@@ -29,7 +30,10 @@ const AdminTelegramPage: React.FC = () => {
 
         if (supaError) throw supaError;
         setSettings(data);
-        setInput(data?.admin_group_id?.toString() ?? "");
+        const raw =
+          (data?.description as string | null) ??
+          (data?.admin_group_id != null ? data.admin_group_id.toString() : "");
+        setInput(raw ?? "");
       } catch (err: any) {
         setError(err.message ?? "Failed to load telegram settings");
       } finally {
@@ -48,14 +52,19 @@ const AdminTelegramPage: React.FC = () => {
 
       const trimmed = input.trim();
       if (!trimmed) {
-        throw new Error("Admin group ID is required.");
+        throw new Error("At least one admin group ID is required.");
       }
-      if (!/^[-]?\d+$/.test(trimmed)) {
-        throw new Error("Admin group ID must be a numeric Telegram chat ID (e.g. -100...).");
+      const parts = trimmed.split(",").map((p) => p.trim()).filter(Boolean);
+      if (!parts.length) {
+        throw new Error("At least one admin group ID is required.");
       }
-
-      const adminGroupId = Number(trimmed);
-      const upsertPayload = { id: 1, admin_group_id: adminGroupId };
+      for (const p of parts) {
+        if (!/^[-]?\d+$/.test(p)) {
+          throw new Error("All admin group IDs must be numeric Telegram chat IDs (e.g. -100...).");
+        }
+      }
+      const primaryId = Number(parts[0]);
+      const upsertPayload = { id: 1, admin_group_id: primaryId, description: parts.join(",") };
 
       const { data, error: supaError } = await supabase
         .from("telegram_settings")
@@ -105,12 +114,12 @@ const AdminTelegramPage: React.FC = () => {
           htmlFor="adminGroupId"
           style={{ display: "block", fontSize: "0.9rem", marginBottom: "0.35rem" }}
         >
-          Admin group chat ID
+          Admin group chat ID(s)
         </label>
         <input
           id="adminGroupId"
           type="text"
-          placeholder="-100..."
+          placeholder="-100..., -100..., ..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           style={{
@@ -124,7 +133,7 @@ const AdminTelegramPage: React.FC = () => {
           }}
         />
         <p style={{ fontSize: "0.75rem", color: "#9ca3af", marginTop: "0.3rem" }}>
-          This should be the numeric Telegram chat ID of the admin group where final orders are sent (usually starts with -100).
+          You can set one or more numeric Telegram chat IDs (comma-separated). All listed IDs will receive new order notifications.
         </p>
 
         <button

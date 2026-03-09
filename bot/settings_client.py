@@ -94,7 +94,7 @@ def fetch_telegram_settings() -> TelegramSettings:
     settings = get_settings()
     if not settings.supabase_url or not settings.supabase_service_key:
         logger.warning("Supabase configuration missing; using ADMIN_GROUP_ID from env only.")
-        return TelegramSettings(admin_group_id=settings.admin_group_id or None)
+        return TelegramSettings(admin_group_id=settings.admin_group_id or None, description=None)
 
     url = f"{settings.supabase_url.rstrip('/')}/rest/v1/telegram_settings"
     params = {"select": "*", "limit": 1}
@@ -110,17 +110,20 @@ def fetch_telegram_settings() -> TelegramSettings:
         rows = resp.json()
     except Exception as e:
         logger.warning("Failed to fetch telegram_settings from Supabase: %s; using env.", e)
-        return TelegramSettings(admin_group_id=settings.admin_group_id or None)
+        return TelegramSettings(admin_group_id=settings.admin_group_id or None, description=None)
 
     if not rows:
-        return TelegramSettings(admin_group_id=settings.admin_group_id or None)
+        return TelegramSettings(admin_group_id=settings.admin_group_id or None, description=None)
 
     row = rows[0]
     admin_group_id_raw: Optional[int] = row.get("admin_group_id")
     if admin_group_id_raw is None and settings.admin_group_id:
         admin_group_id_raw = settings.admin_group_id
 
-    return TelegramSettings(admin_group_id=admin_group_id_raw)
+    return TelegramSettings(
+        admin_group_id=admin_group_id_raw,
+        description=row.get("description"),
+    )
 
 
 def store_stripe_session(session_id: str, telegram_chat_id: int, product_code: str) -> None:

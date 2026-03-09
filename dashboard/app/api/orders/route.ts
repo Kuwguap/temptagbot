@@ -58,19 +58,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
-  const { data: settings } = await supabase.from("telegram_settings").select("admin_group_id").eq("id", 1).maybeSingle();
-  const adminGroupId = settings?.admin_group_id as number | null;
-  if (telegramBotToken && adminGroupId) {
-    const report = `📋 *Order ${orderNumber}* (Web)\nProduct: ${productCode}\nVIN: ${vin}\nAddress: ${address}\nColor: ${color}\nPhone: ${phone}\nInsurance: ${insuranceInfo || "N/A"}`;
-    await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: adminGroupId,
-        text: report,
-        parse_mode: "Markdown",
-      }),
-    });
+  const { data: settings } = await supabase
+    .from("telegram_settings")
+    .select("admin_group_id, description")
+    .eq("id", 1)
+    .maybeSingle();
+  if (telegramBotToken && settings) {
+    const idsRaw =
+      (settings.description as string | null) ??
+      (settings.admin_group_id != null ? String(settings.admin_group_id) : null);
+    const ids = (idsRaw ?? "")
+      .split(",")
+      .map((p) => p.trim())
+      .filter((p) => p && /^-?\d+$/.test(p));
+    if (ids.length) {
+      const report = `📋 *Order ${orderNumber}* (Web)\nProduct: ${productCode}\nVIN: ${vin}\nAddress: ${address}\nColor: ${color}\nPhone: ${phone}\nInsurance: ${insuranceInfo || "N/A"}`;
+      for (const id of ids) {
+        await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: Number(id),
+            text: report,
+            parse_mode: "Markdown",
+          }),
+        });
+      }
+    }
   }
 
   await supabase.from("stripe_sessions").delete().eq("id", sessionId);

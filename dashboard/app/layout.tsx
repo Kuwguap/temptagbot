@@ -35,15 +35,7 @@ export default function RootLayout({
               marginBottom: "1.5rem",
             }}
           >
-            <h1 style={{ fontSize: "1.5rem", fontWeight: 600 }}>TempTagBot Admin</h1>
-            <nav style={{ display: "flex", gap: "1rem", fontSize: "0.95rem" }}>
-              <a href="/" style={{ color: "#e5e7eb", textDecoration: "none" }}>
-                Website
-              </a>
-              <a href="/admin" style={{ color: "#e5e7eb", textDecoration: "none" }}>
-                Admin
-              </a>
-            </nav>
+            <h1 style={{ fontSize: "1.5rem", fontWeight: 600 }}>TempTagBot</h1>
           </header>
           <main>{children}</main>
         </div>
