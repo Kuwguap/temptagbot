@@ -14,6 +14,7 @@ type Product = {
 type TelegramSettings = {
   id: number;
   admin_group_id: number | null;
+  description?: string | null;
 };
 
 export default function AdminOverviewPage() {
@@ -96,10 +97,15 @@ export default function AdminOverviewPage() {
             }}
           >
             <h3 style={{ fontSize: "0.95rem", marginBottom: "0.5rem" }}>
-              Telegram admin group ID
+              Telegram admin group ID(s)
             </h3>
-            <p style={{ fontSize: "1.1rem" }}>
-              {telegramSettings?.admin_group_id ?? "Not set"}
+            <p style={{ fontSize: "0.95rem", whiteSpace: "pre-wrap" }}>
+              {telegramSettings
+                ? (telegramSettings.description as string | null) ??
+                  (telegramSettings.admin_group_id != null
+                    ? telegramSettings.admin_group_id.toString()
+                    : "Not set")
+                : "Not set"}
             </p>
           </div>
         </div>
