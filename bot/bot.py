@@ -138,14 +138,19 @@ async def product_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     checkout_url = _create_stripe_checkout_url(chat_id, selected)
     if checkout_url:
+        keyboard = InlineKeyboardMarkup(
+            [[InlineKeyboardButton("PAY NOW", url=checkout_url)]]
+        )
         await query.edit_message_text(
             text=(
                 f"✅ *{selected.label or selected.code}*\n\n"
                 "Pay securely with Stripe:\n"
-                f"[Open payment page]({checkout_url})\n\n"
+                f"[PAY NOW]({checkout_url})\n"
+                f"{checkout_url}\n\n"
                 "After payment you’ll be asked for your vehicle and contact details."
             ),
             parse_mode=ParseMode.MARKDOWN,
+            reply_markup=keyboard,
         )
     else:
         await query.edit_message_text(

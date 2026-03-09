@@ -1,8 +1,8 @@
 import React from "react";
 
 export const metadata = {
-  title: "TempTagBot Admin",
-  description: "Admin dashboard for TempTagBot configuration",
+  title: "TempTagBot",
+  description: "TempTagBot – online temp tag and insurance checkout",
 };
 
 export default function RootLayout({
@@ -38,13 +38,10 @@ export default function RootLayout({
             <h1 style={{ fontSize: "1.5rem", fontWeight: 600 }}>TempTagBot Admin</h1>
             <nav style={{ display: "flex", gap: "1rem", fontSize: "0.95rem" }}>
               <a href="/" style={{ color: "#e5e7eb", textDecoration: "none" }}>
-                Overview
+                Website
               </a>
-              <a href="/products" style={{ color: "#e5e7eb", textDecoration: "none" }}>
-                Products
-              </a>
-              <a href="/telegram" style={{ color: "#e5e7eb", textDecoration: "none" }}>
-                Telegram
+              <a href="/admin" style={{ color: "#e5e7eb", textDecoration: "none" }}>
+                Admin
               </a>
             </nav>
           </header>
