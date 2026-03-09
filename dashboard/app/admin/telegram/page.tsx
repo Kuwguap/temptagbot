@@ -8,7 +8,7 @@ type TelegramSettings = {
   admin_group_id: number | null;
 };
 
-export default function AdminTelegramPage() {
+const AdminTelegramPage: React.FC = () => {
   const [settings, setSettings] = useState<TelegramSettings | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
@@ -17,7 +17,7 @@ export default function AdminTelegramPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    async function load() {
+    const load = async () => {
       try {
         setLoading(true);
         setError(null);
@@ -35,12 +35,12 @@ export default function AdminTelegramPage() {
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     void load();
   }, []);
 
-  async function save() {
+  const save = async () => {
     try {
       setSaving(true);
       setError(null);
@@ -72,7 +72,7 @@ export default function AdminTelegramPage() {
     } finally {
       setSaving(false);
     }
-  }
+  };
 
   return (
     <section>
@@ -97,7 +97,7 @@ export default function AdminTelegramPage() {
           maxWidth: "420px",
           backgroundColor: "#020617",
           borderRadius: "0.75rem",
-          border: "1px solid "#1f2933",
+          border: "1px solid #1f2933",
           padding: "1rem",
         }}
       >
@@ -117,7 +117,7 @@ export default function AdminTelegramPage() {
             width: "100%",
             padding: "0.4rem 0.6rem",
             borderRadius: "0.5rem",
-            border: "1px solid "#1f2933",
+            border: "1px solid #1f2933",
             backgroundColor: "#020617",
             color: "#e5e7eb",
             fontSize: "0.95rem",
@@ -134,7 +134,7 @@ export default function AdminTelegramPage() {
             marginTop: "0.8rem",
             padding: "0.45rem 0.9rem",
             borderRadius: "999px",
-            border: "1px solid "#3b82f6",
+            border: "1px solid #3b82f6",
             backgroundColor: saving ? "#1e293b" : "#1d4ed8",
             color: "#e5e7eb",
             fontSize: "0.9rem",
@@ -146,5 +146,7 @@ export default function AdminTelegramPage() {
       </div>
     </section>
   );
-}
+};
+
+export default AdminTelegramPage;
 
