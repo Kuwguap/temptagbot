@@ -10,13 +10,22 @@ from telegram.ext import (
     CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
+    MessageHandler,
+    filters,
 )
 
 import stripe
 
 from .config import get_settings
 from .models import BotConfiguration, ProductConfig
-from .settings_client import load_bot_configuration, store_stripe_session
+from .orders import create_order, get_admin_group_id, notify_admin_order
+from .settings_client import (
+    clear_pending_details,
+    get_pending_details,
+    load_bot_configuration,
+    store_stripe_session,
+)
+from .validation import validate_details
 
 
 logging.basicConfig(
@@ -158,6 +167,42 @@ async def product_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         )
 
 
+async def details_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_chat is None or not update.message or not update.message.text:
+        return
+    chat_id = update.effective_chat.id
+    text = update.message.text.strip()
+    product_code = get_pending_details(chat_id)
+    if not product_code:
+        return
+    extracted, errors = validate_details(text, product_code)
+    if errors:
+        await update.message.reply_text(
+            "❌ " + "\n".join(errors) + "\n\nPlease send your details again (VIN, address, color, phone, insurance if needed)."
+        )
+        return
+    vin = extracted.get("vin") or ""
+    address = (extracted.get("address") or "").strip()
+    color = (extracted.get("color") or "").strip()
+    phone = (extracted.get("phone") or "").strip()
+    insurance = (extracted.get("insurance") or "").strip() or None
+    order_number = create_order(
+        product_code=product_code,
+        source="telegram",
+        vin=vin,
+        address=address,
+        color=color,
+        phone=phone,
+        insurance_info=insurance,
+    )
+    clear_pending_details(chat_id)
+    if order_number:
+        notify_admin_order(order_number, product_code, vin, address, color, phone, insurance)
+        await update.message.reply_text(f"✅ Order complete. Your order number is *{order_number}*. We’ll process it shortly.", parse_mode=ParseMode.MARKDOWN)
+    else:
+        await update.message.reply_text("❌ Could not create order. Please try again or contact support.")
+
+
 def build_application() -> Application:
     settings = get_settings()
     app = (
@@ -173,6 +218,7 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CallbackQueryHandler(product_selected, pattern=r"^product:"))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, details_message))
 
     return app
 

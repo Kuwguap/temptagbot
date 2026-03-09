@@ -148,8 +148,42 @@ def store_stripe_session(session_id: str, telegram_chat_id: int, product_code: s
         logger.exception("Failed to store stripe session in Supabase: %s", e)
 
 
-def load_bot_configuration() -> BotConfiguration:
-    products = fetch_products()
-    telegram = fetch_telegram_settings()
-    return BotConfiguration(products=products, telegram=telegram)
+def get_pending_details(telegram_chat_id: int) -> str | None:
+    """Return product_code if this chat has pending details, else None."""
+    settings = get_settings()
+    if not settings.supabase_url or not settings.supabase_service_key:
+        return None
+    url = f"{settings.supabase_url.rstrip('/')}/rest/v1/pending_telegram_details"
+    params = {"select": "product_code", "telegram_chat_id": f"eq.{telegram_chat_id}", "limit": "1"}
+    try:
+        resp = requests.get(
+            url,
+            headers=_supabase_headers(settings.supabase_service_key),
+            params=params,
+            timeout=10,
+        )
+        resp.raise_for_status()
+        rows = resp.json()
+        if rows:
+            return str(rows[0].get("product_code", ""))
+    except Exception as e:
+        logger.warning("get_pending_details failed: %s", e)
+    return None
+
+
+def clear_pending_details(telegram_chat_id: int) -> None:
+    settings = get_settings()
+    if not settings.supabase_url or not settings.supabase_service_key:
+        return
+    url = f"{settings.supabase_url.rstrip('/')}/rest/v1/pending_telegram_details"
+    try:
+        resp = requests.delete(
+            url,
+            headers=_supabase_headers(settings.supabase_service_key),
+            params={"telegram_chat_id": f"eq.{telegram_chat_id}"},
+            timeout=10,
+        )
+        resp.raise_for_status()
+    except Exception as e:
+        logger.warning("clear_pending_details failed: %s", e)
 

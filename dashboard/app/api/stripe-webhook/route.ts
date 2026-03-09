@@ -54,34 +54,36 @@ export async function POST(req: NextRequest) {
     .eq("id", sessionId)
     .maybeSingle();
 
-  if (fetchError || !row?.telegram_chat_id) {
+  if (fetchError || !row) {
     console.error("Stripe webhook: could not find session in DB", fetchError);
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
-  const chatId = row.telegram_chat_id as number;
+  const chatId = row.telegram_chat_id as number | null;
   const productCode = (row.product_code as string) || "product";
 
-  const message = `✅ Payment received for ${productCode}.\n\nPlease send your vehicle and contact details in one message (VIN, address, color, phone, and insurance if applicable).`;
-
-  const telegramUrl = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
-  const telegramRes = await fetch(telegramUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: message,
-      parse_mode: "HTML",
-    }),
-  });
-
-  if (!telegramRes.ok) {
-    const errText = await telegramRes.text();
-    console.error("Telegram send failed:", telegramRes.status, errText);
-    return NextResponse.json({ error: "Failed to notify user" }, { status: 500 });
+  if (chatId != null) {
+    const message = `✅ Payment received for ${productCode}.\n\nPlease send your vehicle and contact details in one message (VIN, address, color, phone, and insurance if applicable).`;
+    const telegramUrl = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
+    const telegramRes = await fetch(telegramUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: "HTML",
+      }),
+    });
+    if (!telegramRes.ok) {
+      const errText = await telegramRes.text();
+      console.error("Telegram send failed:", telegramRes.status, errText);
+      return NextResponse.json({ error: "Failed to notify user" }, { status: 500 });
+    }
+    await supabase.from("pending_telegram_details").upsert(
+      { telegram_chat_id: chatId, product_code: productCode },
+      { onConflict: "telegram_chat_id" }
+    );
+    await supabase.from("stripe_sessions").delete().eq("id", sessionId);
   }
-
-  await supabase.from("stripe_sessions").delete().eq("id", sessionId);
-
   return NextResponse.json({ received: true });
 }

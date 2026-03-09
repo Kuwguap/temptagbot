@@ -22,18 +22,46 @@ create table if not exists public.telegram_settings (
   description text
 );
 
--- Stripe checkout sessions: bot stores session_id -> telegram_chat_id for webhook
+-- Stripe checkout sessions: bot or web store session_id; telegram_chat_id null = web flow
 create table if not exists public.stripe_sessions (
   id text primary key,
-  telegram_chat_id bigint not null,
+  telegram_chat_id bigint,
   product_code text not null,
   created_at timestamptz not null default now()
 );
+
+-- Completed orders (bot and web)
+create table if not exists public.orders (
+  id uuid primary key default gen_random_uuid(),
+  order_number text not null unique,
+  source text not null default 'web',
+  product_code text not null,
+  stripe_session_id text,
+  vin text,
+  address text,
+  color text,
+  phone text,
+  insurance_info text,
+  document_urls jsonb default '[]',
+  created_at timestamptz not null default now()
+);
+create index if not exists orders_order_number_idx on public.orders (order_number);
+
+-- Pending Telegram details: after payment webhook inserts; bot consumes on next message
+create table if not exists public.pending_telegram_details (
+  telegram_chat_id bigint primary key,
+  product_code text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.pending_telegram_details enable row level security;
+create policy "Pending telegram service only"
+  on public.pending_telegram_details for all using (true) with check (true);
 
 -- RLS: enable on all tables
 alter table public.products enable row level security;
 alter table public.telegram_settings enable row level security;
 alter table public.stripe_sessions enable row level security;
+alter table public.orders enable row level security;
 
 -- Policies for dashboard (anon key): allow read/write on products and telegram_settings.
 -- For production, switch to Supabase Auth and restrict to authenticated users.
@@ -42,6 +70,9 @@ create policy "Products read write for anon"
 
 create policy "Telegram settings read write for anon"
   on public.telegram_settings for all using (true) with check (true);
+
+create policy "Orders read write for anon"
+  on public.orders for all using (true) with check (true);
 
 -- stripe_sessions: service role only (bot and webhook use service key). No anon policy.
 -- Bot inserts via SUPABASE_SERVICE_KEY; webhook API reads/deletes via same key.
