@@ -103,7 +103,7 @@ export default function AdminProductsPage() {
           style={{
             padding: "0.4rem 0.9rem",
             borderRadius: "999px",
-            border: "1px solid "#3b82f6",
+            border: "1px solid #3b82f6",
             backgroundColor: "#1d4ed8",
             color: "#e5e7eb",
             fontSize: "0.9rem",
