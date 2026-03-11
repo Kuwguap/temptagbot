@@ -87,6 +87,22 @@ export default function AdminProductsPage() {
     }
   }
 
+  async function deleteProduct(id: string) {
+    try {
+      setError(null);
+      const { error: supaError } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", id);
+
+      if (supaError) throw supaError;
+
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+    } catch (err: any) {
+      setError(err.message ?? "Failed to delete product");
+    }
+  }
+
   return (
     <section>
       <div
@@ -145,6 +161,7 @@ export default function AdminProductsPage() {
                 <th style={{ textAlign: "left", padding: "0.6rem" }}>Price ($)</th>
                 <th style={{ textAlign: "left", padding: "0.6rem" }}>Sort</th>
                 <th style={{ textAlign: "left", padding: "0.6rem" }}>Active</th>
+                <th style={{ textAlign: "left", padding: "0.6rem" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -226,6 +243,23 @@ export default function AdminProductsPage() {
                         void updateProductField(p.id, "active", e.target.checked)
                       }
                     />
+                  </td>
+                  <td style={{ padding: "0.6rem" }}>
+                    <button
+                      type="button"
+                      onClick={() => void deleteProduct(p.id)}
+                      style={{
+                        padding: "0.25rem 0.6rem",
+                        borderRadius: "999px",
+                        border: "1px solid #ef4444",
+                        backgroundColor: "#b91c1c",
+                        color: "#e5e7eb",
+                        fontSize: "0.8rem",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
