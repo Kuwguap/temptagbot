@@ -4,7 +4,9 @@ services:
     env: python
     plan: free
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "python -m bot.main"
+    # Run a small HTTP health server on $PORT so Render's web service can
+    # start successfully, while the Telegram bot runs in the background.
+    startCommand: "python -m bot.server"
     autoDeploy: true
     envVars:
       - key: TELEGRAM_BOT_TOKEN
