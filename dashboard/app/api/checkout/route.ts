@@ -5,9 +5,10 @@ import { createClient } from "@supabase/supabase-js";
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
-const baseUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+// Use production domain for Stripe redirects so users land on temptagbot.com, not a Vercel preview URL
+const baseUrl =
+  process.env.NEXT_PUBLIC_BASE_URL?.trim() ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");

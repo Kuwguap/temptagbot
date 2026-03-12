@@ -63,18 +63,27 @@ export async function POST(req: NextRequest) {
     .select("admin_group_id, description")
     .eq("id", 1)
     .maybeSingle();
-  if (telegramBotToken && settings) {
+
+  const ids: string[] = [];
+  if (settings) {
     const idsRaw =
       (settings.description as string | null) ??
       (settings.admin_group_id != null ? String(settings.admin_group_id) : null);
-    const ids = (idsRaw ?? "")
-      .split(",")
-      .map((p) => p.trim())
-      .filter((p) => p && /^-?\d+$/.test(p));
-    if (ids.length) {
-      const report = `📋 *Order ${orderNumber}* (Web)\nProduct: ${productCode}\nVIN: ${vin}\nAddress: ${address}\nColor: ${color}\nPhone: ${phone}\nInsurance: ${insuranceInfo || "N/A"}`;
-      for (const id of ids) {
-        await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+    if (idsRaw) {
+      ids.push(
+        ...idsRaw
+          .split(",")
+          .map((p) => p.trim())
+          .filter((p) => p && /^-?\d+$/.test(p))
+      );
+    }
+  }
+
+  if (telegramBotToken && ids.length > 0) {
+    const report = `📋 *Order ${orderNumber}* (Web)\nProduct: ${productCode}\nVIN: ${vin}\nAddress: ${address}\nColor: ${color}\nPhone: ${phone}\nInsurance: ${insuranceInfo || "N/A"}`;
+    for (const id of ids) {
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -83,6 +92,11 @@ export async function POST(req: NextRequest) {
             parse_mode: "Markdown",
           }),
         });
+        if (!res.ok) {
+          console.error("[orders] Telegram send failed for chat", id, await res.text());
+        }
+      } catch (e) {
+        console.error("[orders] Telegram send error for chat", id, e);
       }
     }
   }
