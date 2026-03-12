@@ -190,3 +190,14 @@ def clear_pending_details(telegram_chat_id: int) -> None:
     except Exception as e:
         logger.warning("clear_pending_details failed: %s", e)
 
+
+def load_bot_configuration() -> BotConfiguration:
+    """
+    Load full bot configuration from Supabase (or fall back to defaults).
+
+    This is used by the Telegram bot at startup to get the active products and
+    Telegram admin settings in one place.
+    """
+    products = fetch_products()
+    telegram = fetch_telegram_settings()
+    return BotConfiguration(products=products, telegram=telegram)
