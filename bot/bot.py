@@ -18,7 +18,7 @@ import stripe
 
 from .config import get_settings
 from .models import BotConfiguration, ProductConfig
-from .orders import create_order, get_admin_group_id, notify_admin_order
+from .orders import create_order, get_admin_group_ids, notify_admin_order
 from .settings_client import (
     clear_pending_details,
     get_pending_details,
